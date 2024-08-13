@@ -3,7 +3,7 @@ import { authOptions } from "../auth/[...nextauth]/options"
 import dbConnect from "@/lib/dbConnect"
 import UserModel from "@/model/User.model"
 import { User } from "next-auth"
-import { use } from "react"
+
 
 // by checking the session we gonna check if the user is accepting the message or not
 
