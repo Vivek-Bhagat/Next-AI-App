@@ -1,8 +1,9 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose"
 
 export interface Message extends Document {
-  content: string;
-  createdAt: Date;
+  content: string
+  createdAt: Date
+  _id: string
 }
 
 const MessageSchema: Schema<Message> = new mongoose.Schema({
@@ -15,17 +16,17 @@ const MessageSchema: Schema<Message> = new mongoose.Schema({
     required: true,
     default: Date.now,
   },
-});
+})
 
 export interface User extends Document {
-  username: string;
-  email: string;
-  password: string;
-  verifyCode: string;
-  verifyCodeExpiry: Date;
-  isVerified: boolean;
-  isAcceptingMessages: boolean;
-  messages: Message[];
+  username: string
+  email: string
+  password: string
+  verifyCode: string
+  verifyCodeExpiry: Date
+  isVerified: boolean
+  isAcceptingMessages: boolean
+  messages: Message[]
 }
 
 // Updated User schema
@@ -63,10 +64,10 @@ const UserSchema: Schema<User> = new mongoose.Schema({
     default: true,
   },
   messages: [MessageSchema],
-});
+})
 
 const UserModel =
   (mongoose.models.User as mongoose.Model<User>) ||
-  mongoose.model<User>("User", UserSchema);
+  mongoose.model<User>("User", UserSchema)
 
-export default UserModel;
+export default UserModel
