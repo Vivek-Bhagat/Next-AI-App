@@ -24,7 +24,7 @@ export async function GET(request: Request) {
         {
           success: false,
           message:
-            usernameErrors?.length > 0
+            usernameErrors.length > 0
               ? usernameErrors.join(", ")
               : "Invalid query parameters",
         },
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
           success: false,
           message: "Username is already taken",
         },
-        { status: 200 }
+        { status: 409 } // Conflict
       )
     }
 

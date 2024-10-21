@@ -42,7 +42,7 @@ export default function SendMessage() {
     complete,
     completion,
     isLoading: isSuggestLoading,
-    error,
+    error: suggestError,
   } = useCompletion({
     api: "/api/suggest-messages",
     initialCompletion: initialMessageString,
@@ -53,12 +53,11 @@ export default function SendMessage() {
   })
 
   const messageContent = form.watch("content")
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleMessageClick = (message: string) => {
     form.setValue("content", message)
   }
-
-  const [isLoading, setIsLoading] = useState(false)
 
   const onSubmit = async (data: z.infer<typeof messageSchema>) => {
     setIsLoading(true)
@@ -72,13 +71,13 @@ export default function SendMessage() {
         title: response.data.message,
         variant: "default",
       })
-      form.reset({ ...form.getValues(), content: "" })
+      form.reset()
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>
       toast({
         title: "Error",
         description:
-          axiosError.response?.data.message ?? "Failed to sent message",
+          axiosError.response?.data.message ?? "Failed to send message",
         variant: "destructive",
       })
     } finally {
@@ -88,10 +87,14 @@ export default function SendMessage() {
 
   const fetchSuggestedMessages = async () => {
     try {
-      complete("")
+      await complete("") // Using await to ensure completion before moving on
     } catch (error) {
       console.error("Error fetching messages:", error)
-      // Handle error appropriately
+      toast({
+        title: "Error",
+        description: "Failed to fetch suggested messages",
+        variant: "destructive",
+      })
     }
   }
 
@@ -113,7 +116,7 @@ export default function SendMessage() {
                 <FormControl>
                   <Textarea
                     placeholder="Write your anonymous message here"
-                    className="resize-none"
+                    className="resize-none max-h-40"
                     {...field}
                   />
                 </FormControl>
@@ -122,18 +125,18 @@ export default function SendMessage() {
             )}
           />
           <div className="flex justify-center">
-            {isLoading ? (
-              <Button disabled>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Please wait
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={isLoading || !messageContent}>
-                Send It
-              </Button>
-            )}
+            <Button
+              type="submit"
+              disabled={isLoading || !messageContent}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                "Send It"
+              )}
+            </Button>
           </div>
         </form>
       </Form>
@@ -144,7 +147,11 @@ export default function SendMessage() {
             onClick={fetchSuggestedMessages}
             className="my-4"
             disabled={isSuggestLoading}>
-            Suggest Messages
+            {isSuggestLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              "Suggest Messages"
+            )}
           </Button>
           <p>Click on any message below to select it.</p>
         </div>
@@ -153,8 +160,8 @@ export default function SendMessage() {
             <h3 className="text-xl font-semibold">Messages</h3>
           </CardHeader>
           <CardContent className="flex flex-col space-y-4">
-            {error ? (
-              <p className="text-red-500">{error.message}</p>
+            {suggestError ? (
+              <p className="text-red-500">{suggestError.message}</p>
             ) : (
               parseStringMessages(completion).map((message, index) => (
                 <Button

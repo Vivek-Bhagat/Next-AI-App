@@ -2,11 +2,23 @@ import dbConnect from "@/lib/dbConnect"
 import UserModel from "@/model/User.model"
 import { Message } from "@/model/User.model"
 
-
 export async function POST(request: Request) {
   await dbConnect()
 
   const { username, content } = await request.json()
+
+  // Input validation
+  if (!username || !content) {
+    return Response.json(
+      {
+        success: false,
+        message: "Username and content are required",
+      },
+      {
+        status: 400,
+      }
+    )
+  }
 
   try {
     const user = await UserModel.findOne({ username })
@@ -22,47 +34,44 @@ export async function POST(request: Request) {
       )
     }
 
-    // is user accepting the messages
-    // can be known throught user fields
-
+    // Check if the user is accepting messages
     if (!user.isAcceptingMessages) {
       return Response.json(
         {
           success: false,
-          message: "User is not accepting the messages",
+          message: "User is not accepting messages",
         },
         {
           status: 403,
         }
       )
+    }
+
+    // Create new message and push it to the user's messages
+    const newMessage: Message = { content, createdAt: new Date() }
+    user.messages.push(newMessage)
+    await user.save()
+
+    return Response.json(
+      {
+        success: true,
+        message: "Message sent successfully",
+      },
+      {
+        status: 200, // Changed to 200 for successful response
       }
-      
-      
-      //   user available
-      //   now push the message to the user
-      const newMessage = { content, createdAt: new Date() }
-      user.messages.push(newMessage as Message) 
-      await user.save()
-      return Response.json(
-        {
-          success: true,
-          message: "Message sent successfully",
-        },
-        {
-          status: 401,
-        }
-      )
+    )
   } catch (error) {
-      console.log("Unexpected error occured",error);
-      
-      return Response.json(
-        {
-          success: false,
-          message: "Not Authenticate",
-        },
-        {
-          status: 500,
-        }
-      )
+    console.error("Unexpected error occurred:", error) // Improved logging
+
+    return Response.json(
+      {
+        success: false,
+        message: "Unexpected error occurred",
+      },
+      {
+        status: 500,
+      }
+    )
   }
 }

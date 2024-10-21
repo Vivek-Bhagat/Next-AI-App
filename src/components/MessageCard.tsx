@@ -37,25 +37,16 @@ export function MessageCard({ message, onMessageDelete }: MessageCardProps) {
       toast({
         title: response.data.message,
       })
-      onMessageDelete(message._id)
+      onMessageDelete(message._id) // Call the callback to update the UI
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        // Safely cast error to AxiosError<ApiResponse>
-        const axiosError = error as AxiosError<ApiResponse>
-        toast({
-          title: "Error",
-          description:
-            axiosError.response?.data.message ?? "Failed to delete message",
-          variant: "destructive",
-        })
-      } else {
-        // Handle non-Axios errors
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        })
-      }
+      const axiosError = error as AxiosError<ApiResponse>
+      toast({
+        title: "Error",
+        description:
+          axiosError.response?.data.message ?? "Failed to delete message",
+        variant: "destructive",
+      })
+      console.error("Error deleting message:", error)
     } finally {
       setIsDeleting(false)
     }
@@ -70,7 +61,8 @@ export function MessageCard({ message, onMessageDelete }: MessageCardProps) {
             <AlertDialogTrigger asChild>
               <Button
                 variant="destructive"
-                disabled={isDeleting}>
+                disabled={isDeleting}
+                aria-label="Delete message">
                 {isDeleting ? "Deleting..." : <X className="w-5 h-5" />}
               </Button>
             </AlertDialogTrigger>
@@ -84,7 +76,9 @@ export function MessageCard({ message, onMessageDelete }: MessageCardProps) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteConfirm}>
+                <AlertDialogAction
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}>
                   Continue
                 </AlertDialogAction>
               </AlertDialogFooter>

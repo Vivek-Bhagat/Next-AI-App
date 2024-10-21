@@ -4,9 +4,7 @@ import dbConnect from "@/lib/dbConnect"
 import UserModel from "@/model/User.model"
 import { User } from "next-auth"
 
-
-// by checking the session we gonna check if the user is accepting the message or not
-
+// Handling POST request to update user's acceptance of messages
 export async function POST(request: Request) {
   await dbConnect()
 
@@ -26,12 +24,25 @@ export async function POST(request: Request) {
   }
 
   const userId = user._id
-  const acceptMessages = await request.json()
+
+  // Validate the request body
+  const { isAcceptingMessages } = await request.json()
+  if (typeof isAcceptingMessages !== "boolean") {
+    return Response.json(
+      {
+        success: false,
+        message: "Invalid request: isAcceptingMessages must be a boolean",
+      },
+      {
+        status: 400,
+      }
+    )
+  }
 
   try {
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
-      { isAcceptingMessages: acceptMessages },
+      { isAcceptingMessages },
       { new: true }
     )
 
@@ -39,30 +50,30 @@ export async function POST(request: Request) {
       return Response.json(
         {
           success: false,
-          message: "Failed to update user status to accept messages ",
+          message: "Failed to update user status to accept messages",
         },
         {
           status: 500,
         }
       )
     }
-    //   true part is user is found
+
     return Response.json(
       {
         success: true,
-        message: "message acceptances updated successfully",
+        message: "Message acceptance updated successfully",
       },
       {
         status: 200,
       }
     )
   } catch (error) {
-    console.log("Failed to update user status to accept messages ")
+    console.error("Failed to update user status:", error)
 
     return Response.json(
       {
         success: false,
-        message: "Failed to update user status to accept messages ",
+        message: "Internal server error",
       },
       {
         status: 500,
@@ -71,6 +82,7 @@ export async function POST(request: Request) {
   }
 }
 
+// Handling GET request to retrieve user's acceptance status for messages
 export async function GET(request: Request) {
   await dbConnect()
 
@@ -90,9 +102,10 @@ export async function GET(request: Request) {
   }
 
   const userId = user._id
-  const foundUser = await UserModel.findById(userId)
 
   try {
+    const foundUser = await UserModel.findById(userId)
+
     if (!foundUser) {
       return Response.json(
         {
@@ -104,10 +117,10 @@ export async function GET(request: Request) {
         }
       )
     }
+
     return Response.json(
       {
         success: true,
-        //  message: "Not Authenticated",
         isAcceptingMessages: foundUser.isAcceptingMessages,
       },
       {
@@ -115,12 +128,12 @@ export async function GET(request: Request) {
       }
     )
   } catch (error) {
-    console.log("Failed to update user status to accept messages ")
+    console.error("Error retrieving user acceptance status:", error)
 
     return Response.json(
       {
         success: false,
-        message: "Error in getting user acceptance message",
+        message: "Error retrieving user acceptance status",
       },
       {
         status: 500,

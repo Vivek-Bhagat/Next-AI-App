@@ -16,17 +16,12 @@ import React, { useCallback, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { acceptMessageSchema } from "@/schemas/acceptMessageSchema.schemas"
 
-function UserDashboard() {
+const Page = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSwitchLoading, setIsSwitchLoading] = useState(false)
 
   const { toast } = useToast()
-
-  const handleDeleteMessage = (messageId: string) => {
-    setMessages(messages.filter((message) => message._id !== messageId))
-  }
-
   const { data: session } = useSession()
 
   const form = useForm({
@@ -36,94 +31,90 @@ function UserDashboard() {
   const { register, watch, setValue } = form
   const acceptMessages = watch("acceptMessages")
 
-  const fetchAcceptMessages = useCallback(async () => {
-    setIsSwitchLoading(true)
+  // Centralized function to handle API calls
+  const fetchData = async (url: string, method: "GET" | "POST", data?: any) => {
+    setIsLoading(method === "GET")
+    setIsSwitchLoading(method === "POST")
+
     try {
-      const response = await axios.get<ApiResponse>("/api/accept-messages")
-      setValue("acceptMessages", response.data.isAcceptingMessage)
+      const response = await axios({ method, url, data })
+      return response.data
     } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse>
-      toast({
-        title: "Error",
-        description:
-          axiosError.response?.data.message ??
-          "Failed to fetch message settings",
-        variant: "destructive",
-      })
+      handleError(error)
+      throw error // Re-throw error for further handling if needed
     } finally {
+      setIsLoading(false)
       setIsSwitchLoading(false)
     }
-  }, [setValue, toast])
+  }
 
-  const fetchMessages = useCallback(
-    async (refresh: boolean = false) => {
-      setIsLoading(true)
-      setIsSwitchLoading(false)
-      try {
-        const response = await axios.get<ApiResponse>("/api/get-messages")
-        setMessages(response.data.messages || [])
-        if (refresh) {
-          toast({
-            title: "Refreshed Messages",
-            description: "Showing latest messages",
-          })
-        }
-      } catch (error) {
-        const axiosError = error as AxiosError<ApiResponse>
-        toast({
-          title: "Error",
-          description:
-            axiosError.response?.data.message ?? "Failed to fetch messages",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
-        setIsSwitchLoading(false)
-      }
-    },
-    [setIsLoading, setMessages, toast]
-  )
+  const handleError = (error: unknown) => {
+    const axiosError = error as AxiosError<ApiResponse>
+    toast({
+      title: "Error",
+      description:
+        axiosError.response?.data.message || "An unexpected error occurred",
+      variant: "destructive",
+    })
+  }
 
-  // Fetch initial state from the server
-  useEffect(() => {
-    if (!session || !session.user) return
-
-    fetchMessages()
-
-    fetchAcceptMessages()
-  }, [session, setValue, toast, fetchAcceptMessages, fetchMessages])
-
-  // Handle switch change
-  const handleSwitchChange = async () => {
+  const fetchAcceptMessages = useCallback(async () => {
     try {
-      const response = await axios.post<ApiResponse>("/api/accept-messages", {
-        acceptMessages: !acceptMessages,
+      const data = await fetchData("/api/accept-message", "GET")
+      setValue("acceptMessages", data.isAcceptingMessage)
+    } catch (error) {
+      console.error("Error fetching accept messages:", error)
+    }
+  }, [setValue])
+
+  const fetchMessages = useCallback(async (refresh: boolean = false) => {
+    try {
+      const data = await fetchData("/api/get-messages", "GET")
+      setMessages(data.messages || [])
+      if (refresh) {
+        toast({
+          title: "Refreshed Messages",
+          description: "Showing latest messages",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchMessages()
+      fetchAcceptMessages()
+    }
+  }, [session, fetchMessages, fetchAcceptMessages])
+
+  const handleSwitchChange = async () => {
+    setIsSwitchLoading(true)
+    try {
+      const response = await fetchData("/api/accept-messages", "POST", {
+        isAcceptingMessages: !acceptMessages, // Changed to match server expectation
       })
       setValue("acceptMessages", !acceptMessages)
       toast({
-        title: response.data.message,
+        title: response.message,
         variant: "default",
       })
     } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse>
-      toast({
-        title: "Error",
-        description:
-          axiosError.response?.data.message ??
-          "Failed to update message settings",
-        variant: "destructive",
-      })
+      console.error("Error toggling accept messages:", error)
+    } finally {
+      setIsSwitchLoading(false) // Ensure loading state is reset
     }
   }
 
-  if (!session || !session.user) {
-    return <div></div>
+
+  if (!session?.user) {
+    return <div>Please Login</div>
   }
 
-  const { username } = session.user as User
-
-  const baseUrl = `${window.location.protocol}//${window.location.host}`
-  const profileUrl = `${baseUrl}/u/${username}`
+  const profileUrl = `${window.location.origin}/u/${
+    (session.user as User).username
+  }`
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(profileUrl)
@@ -138,7 +129,7 @@ function UserDashboard() {
       <h1 className="text-4xl font-bold mb-4">User Dashboard</h1>
 
       <div className="mb-4">
-        <h2 className="text-lg font-semibold mb-2">Copy Your Unique Link</h2>{" "}
+        <h2 className="text-lg font-semibold mb-2">Copy Your Unique Link</h2>
         <div className="flex items-center">
           <input
             type="text"
@@ -150,7 +141,7 @@ function UserDashboard() {
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex items-center">
         <Switch
           {...register("acceptMessages")}
           checked={acceptMessages}
@@ -158,31 +149,33 @@ function UserDashboard() {
           disabled={isSwitchLoading}
         />
         <span className="ml-2">
-          Accept Messages: {acceptMessages ? "On" : "Off"}
+          Accept Messages: {acceptMessages ? "OFF" : "ON"}
         </span>
       </div>
+
       <Separator />
 
       <Button
         className="mt-4"
         variant="outline"
-        onClick={(e) => {
-          e.preventDefault()
-          fetchMessages(true)
-        }}>
+        onClick={() => fetchMessages(true)}
+        disabled={isLoading}>
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
           <RefreshCcw className="h-4 w-4" />
         )}
       </Button>
+
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
         {messages.length > 0 ? (
-          messages.map((message, index) => (
+          messages.map((message) => (
             <MessageCard
               key={message._id}
               message={message}
-              onMessageDelete={handleDeleteMessage}
+              onMessageDelete={() =>
+                setMessages(messages.filter((m) => m._id !== message._id))
+              }
             />
           ))
         ) : (
@@ -193,4 +186,4 @@ function UserDashboard() {
   )
 }
 
-export default UserDashboard
+export default Page
