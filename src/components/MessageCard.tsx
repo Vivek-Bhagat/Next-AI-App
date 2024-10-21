@@ -30,13 +30,12 @@ export function MessageCard({ message, onMessageDelete }: MessageCardProps) {
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true)
+    console.log(`Sending DELETE request to: /api/delete-message/${message._id}`)
     try {
       const response = await axios.delete<ApiResponse>(
         `/api/delete-message/${message._id}`
       )
-      toast({
-        title: response.data.message,
-      })
+      toast({ title: response.data.message })
       onMessageDelete(message._id) // Call the callback to update the UI
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>

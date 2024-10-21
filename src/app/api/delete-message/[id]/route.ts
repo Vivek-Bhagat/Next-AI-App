@@ -1,26 +1,21 @@
 import dbConnect from "@/lib/dbConnect"
 import UserModel from "@/model/User.model"
-import { NextApiRequest, NextApiResponse } from "next"
+import { NextResponse } from "next/server"
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
 ) {
-  // Only allow DELETE requests
-  if (req.method !== "DELETE") {
-    return res.status(405).json({
-      success: false,
-      message: "Method Not Allowed",
-    })
-  }
-
-  const { id } = req.query
+  const { id } = params
 
   if (!id || typeof id !== "string") {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid message ID",
-    })
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Invalid message ID",
+      },
+      { status: 400 }
+    )
   }
 
   try {
@@ -34,21 +29,27 @@ export default async function handler(
     )
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "Message not found",
-      })
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Message not found",
+        },
+        { status: 404 }
+      )
     }
 
-    return res.status(200).json({
+    return NextResponse.json({
       success: true,
       message: "Message deleted successfully",
     })
   } catch (error) {
     console.error("Error deleting message:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    })
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Internal server error",
+      },
+      { status: 500 }
+    )
   }
 }

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "../auth/[...nextauth]/options"
 import dbConnect from "@/lib/dbConnect"
 import UserModel from "@/model/User.model"
+import { NextResponse } from "next/server"
 import { User } from "next-auth"
 
 // Handling POST request to update user's acceptance of messages
@@ -11,15 +12,13 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
   const user: User = session?.user as User
 
-  if (!session || !session.user) {
-    return Response.json(
+  if (!session || !user) {
+    return NextResponse.json(
       {
         success: false,
         message: "Not Authenticated",
       },
-      {
-        status: 401,
-      }
+      { status: 401 }
     )
   }
 
@@ -28,14 +27,12 @@ export async function POST(request: Request) {
   // Validate the request body
   const { isAcceptingMessages } = await request.json()
   if (typeof isAcceptingMessages !== "boolean") {
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         message: "Invalid request: isAcceptingMessages must be a boolean",
       },
-      {
-        status: 400,
-      }
+      { status: 400 }
     )
   }
 
@@ -47,37 +44,30 @@ export async function POST(request: Request) {
     )
 
     if (!updatedUser) {
-      return Response.json(
+      return NextResponse.json(
         {
           success: false,
-          message: "Failed to update user status to accept messages",
+          message: "Failed to update user status",
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       )
     }
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: true,
         message: "Message acceptance updated successfully",
       },
-      {
-        status: 200,
-      }
+      { status: 200 }
     )
   } catch (error) {
     console.error("Failed to update user status:", error)
-
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         message: "Internal server error",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     )
   }
 }
@@ -89,15 +79,13 @@ export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
   const user: User = session?.user as User
 
-  if (!session || !session.user) {
-    return Response.json(
+  if (!session || !user) {
+    return NextResponse.json(
       {
         success: false,
         message: "Not Authenticated",
       },
-      {
-        status: 401,
-      }
+      { status: 401 }
     )
   }
 
@@ -107,37 +95,30 @@ export async function GET(request: Request) {
     const foundUser = await UserModel.findById(userId)
 
     if (!foundUser) {
-      return Response.json(
+      return NextResponse.json(
         {
           success: false,
           message: "User not found",
         },
-        {
-          status: 404,
-        }
+        { status: 404 }
       )
     }
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: true,
         isAcceptingMessages: foundUser.isAcceptingMessages,
       },
-      {
-        status: 200,
-      }
+      { status: 200 }
     )
   } catch (error) {
     console.error("Error retrieving user acceptance status:", error)
-
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         message: "Error retrieving user acceptance status",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     )
   }
 }

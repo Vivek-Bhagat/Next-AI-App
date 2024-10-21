@@ -50,10 +50,11 @@ const Page = () => {
 
   const handleError = (error: unknown) => {
     const axiosError = error as AxiosError<ApiResponse>
+    const errorMessage =
+      axiosError.response?.data.message || "An unexpected error occurred"
     toast({
       title: "Error",
-      description:
-        axiosError.response?.data.message || "An unexpected error occurred",
+      description: errorMessage,
       variant: "destructive",
     })
   }
@@ -61,9 +62,9 @@ const Page = () => {
   const fetchAcceptMessages = useCallback(async () => {
     try {
       const data = await fetchData("/api/accept-message", "GET")
-      setValue("acceptMessages", data.isAcceptingMessage)
+      setValue("acceptMessages", data.isAcceptingMessages) // Correcting key name to match the response
     } catch (error) {
-      console.error("Error fetching accept messages:", error)
+      console.error("Error fetching acceptance status:", error)
     }
   }, [setValue])
 
@@ -93,7 +94,7 @@ const Page = () => {
     setIsSwitchLoading(true)
     try {
       const response = await fetchData("/api/accept-messages", "POST", {
-        isAcceptingMessages: !acceptMessages, // Changed to match server expectation
+        isAcceptingMessages: !acceptMessages, // Ensure this matches server expectations
       })
       setValue("acceptMessages", !acceptMessages)
       toast({
@@ -101,15 +102,15 @@ const Page = () => {
         variant: "default",
       })
     } catch (error) {
-      console.error("Error toggling accept messages:", error)
+      console.error("Error toggling acceptance status:", error)
+      
     } finally {
       setIsSwitchLoading(false) // Ensure loading state is reset
     }
   }
 
-
   if (!session?.user) {
-    return <div>Please Login</div>
+    return <div>Please Log In</div>
   }
 
   const profileUrl = `${window.location.origin}/u/${
@@ -149,7 +150,7 @@ const Page = () => {
           disabled={isSwitchLoading}
         />
         <span className="ml-2">
-          Accept Messages: {acceptMessages ? "OFF" : "ON"}
+          Accept Messages: {acceptMessages ? "ON" : "OFF"}
         </span>
       </div>
 
