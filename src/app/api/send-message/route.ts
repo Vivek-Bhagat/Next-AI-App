@@ -1,11 +1,11 @@
-import dbConnect from "@/lib/dbConnect"
-import UserModel from "@/model/User.model"
-import { Message } from "@/model/User.model"
+import dbConnect from "@/lib/dbConnect";
+import UserModel from "@/model/User.model";
+import { Message } from "@/model/User.model";
 
 export async function POST(request: Request) {
-  await dbConnect()
+  await dbConnect();
 
-  const { username, content } = await request.json()
+  const { username, content } = await request.json();
 
   // Input validation
   if (!username || !content) {
@@ -17,11 +17,11 @@ export async function POST(request: Request) {
       {
         status: 400,
       }
-    )
+    );
   }
 
   try {
-    const user = await UserModel.findOne({ username })
+    const user = await UserModel.findOne({ username });
     if (!user) {
       return Response.json(
         {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         {
           status: 404,
         }
-      )
+      );
     }
 
     // Check if the user is accepting messages
@@ -44,13 +44,12 @@ export async function POST(request: Request) {
         {
           status: 403,
         }
-      )
+      );
     }
 
     // Create new message and push it to the user's messages
-    const newMessage: Message = { content, createdAt: new Date() }
-    user.messages.push(newMessage)
-    await user.save()
+    user.messages.push({ content, createdAt: new Date() } as any);
+    await user.save();
 
     return Response.json(
       {
@@ -60,9 +59,9 @@ export async function POST(request: Request) {
       {
         status: 200, // Changed to 200 for successful response
       }
-    )
+    );
   } catch (error) {
-    console.error("Unexpected error occurred:", error) // Improved logging
+    console.error("Unexpected error occurred:", error); // Improved logging
 
     return Response.json(
       {
@@ -72,6 +71,6 @@ export async function POST(request: Request) {
       {
         status: 500,
       }
-    )
+    );
   }
 }

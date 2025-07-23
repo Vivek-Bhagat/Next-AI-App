@@ -1,37 +1,37 @@
-"use client"
+"use client";
 
-import { ApiResponse } from "@/types/ApiResponse"
-import { zodResolver } from "@hookform/resolvers/zod"
-import Link from "next/link"
-import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
-import { useDebounceCallback } from "usehooks-ts"
-import * as z from "zod"
+import { ApiResponse } from "@/types/ApiResponse";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useDebounceCallback } from "usehooks-ts";
+import * as z from "zod";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/components/ui/use-toast"
-import axios, { AxiosError } from "axios"
-import { Loader2 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { signUpSchema } from "@/schemas/signUpSchema.schemas"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import axios, { AxiosError } from "axios";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { signUpSchema } from "@/schemas/signUpSchema.schemas";
 
-const page = () => {
-  const [username, setUsername] = useState("")
-  const [usernameMessage, setUsernameMessage] = useState("")
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const debounced = useDebounceCallback(setUsername, 300)
+const Page = () => {
+  const [username, setUsername] = useState("");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const debounced = useDebounceCallback(setUsername, 300);
 
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -40,63 +40,63 @@ const page = () => {
       email: "",
       password: "",
     },
-  })
+  });
 
   useEffect(() => {
     const checkUsernameUnique = async () => {
       if (username) {
-        setIsCheckingUsername(true)
-        setUsernameMessage("") // Reset message
+        setIsCheckingUsername(true);
+        setUsernameMessage(""); // Reset message
         try {
           const response = await axios.get<ApiResponse>(
             `/api/check-username-unique?username=${username}`
-          )
-          let message = response.data.message
-          setUsernameMessage(message)
+          );
+          let message = response.data.message;
+          setUsernameMessage(message);
         } catch (error) {
-          const axiosError = error as AxiosError<ApiResponse>
+          const axiosError = error as AxiosError<ApiResponse>;
           setUsernameMessage(
             axiosError.response?.data.message ?? "Error checking username"
-          )
+          );
         } finally {
-          setIsCheckingUsername(false)
+          setIsCheckingUsername(false);
         }
       }
-    }
-    checkUsernameUnique()
-  }, [username])
+    };
+    checkUsernameUnique();
+  }, [username]);
 
   const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const response = await axios.post<ApiResponse>("/api/sign-up", data)
+      const response = await axios.post<ApiResponse>("/api/sign-up", data);
 
       toast({
         title: "Success",
         description: response.data.message,
-      })
+      });
 
-      router.replace(`/verify/${username}`)
+      router.replace(`/dashboard`);
 
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     } catch (error) {
-      console.error("Error during sign-up:", error)
+      console.error("Error during sign-up:", error);
 
-      const axiosError = error as AxiosError<ApiResponse>
+      const axiosError = error as AxiosError<ApiResponse>;
 
       // Default error message
-      let errorMessage = axiosError.response?.data.message
-      ;("There was a problem with your sign-up. Please try again.")
+      let errorMessage = axiosError.response?.data.message;
+      ("There was a problem with your sign-up. Please try again.");
 
       toast({
         title: "Sign Up Failed",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
 
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-800">
@@ -120,8 +120,8 @@ const page = () => {
                   <Input
                     {...field}
                     onChange={(e) => {
-                      field.onChange(e)
-                      debounced(e.target.value)
+                      field.onChange(e);
+                      debounced(e.target.value);
                     }}
                   />
                   {isCheckingUsername && <Loader2 className="animate-spin" />}
@@ -150,7 +150,7 @@ const page = () => {
                     name="email"
                   />
                   <p className="text-muted text-gray-800 text-sm">
-                    We will send you a verification code
+                    Enter your email address
                   </p>
                   <FormMessage />
                 </FormItem>
@@ -199,7 +199,7 @@ const page = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default page
+export default Page;
